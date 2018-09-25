@@ -919,6 +919,9 @@ bool LuaState::handleMouseButtonEvent(float x, float y, int button, bool down)
 // Returns true if a handler is registered for the tick event
 bool LuaState::handleTickEvent(double dt)
 {
+    if (!costate)
+        return true;
+
     CelestiaCore* appCore = getAppCore(costate, NoErrors);
     if (appCore == NULL)
     {
@@ -1036,8 +1039,7 @@ int LuaState::resume()
             CelestiaCore* appCore = getAppCore(co);
             if (appCore != NULL)
             {
-                CelestiaCore::Alerter* alerter = appCore->getAlerter();
-                alerter->fatalError(errorMessage);
+                appCore->fatalError(errorMessage);
             }
         }
 
@@ -3424,7 +3426,7 @@ static int celestia_requestsystemaccess(lua_State* l)
 static int celestia_getscriptpath(lua_State* l)
 {
     // ignore possible argument for future extensions
-    Celx_CheckArgs(l, 1, 1, "No argument expected for celestia:requestsystemaccess()");
+    Celx_CheckArgs(l, 1, 1, "No argument expected for celestia:getscriptpath()");
     this_celestia(l);
     lua_pushstring(l, "celestia-scriptpath");
     lua_gettable(l, LUA_REGISTRYINDEX);
@@ -3746,11 +3748,10 @@ bool LuaState::init(CelestiaCoreApplication* appCore)
     lua_pushstring(state, "luainit.celx"); // parameter
     if (lua_pcall(state, 1, 0, 0) != 0) // execute it
     {
-        CelestiaCore::Alerter* alerter = appCore->getAlerter();
         // copy string?!
         const char* errorMessage = lua_tostring(state, -1);
         cout << errorMessage << '\n'; cout.flush();
-        alerter->fatalError(errorMessage);
+        appCore->fatalError(errorMessage);
         return false;
     }
 #endif
